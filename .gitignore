@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Configuration & Secrets
+.env
+config.json
+
+# Audio Cache & Test Outputs
+cache/
+tests/*.mp3
+tests/test_output.mp3
+
+# IDEs
+.idea/
+.vscode/
+
+# PyInstaller Build Artifacts
+build/
+dist/
+
