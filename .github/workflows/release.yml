@@ -1,0 +1,131 @@
+name: Build and Release Portable EXE
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: false
+        default: ''
+        type: string
+      release_title:
+        description: 'Release Title (e.g. IELTS Shadowing Assistant v1.0.0)'
+        required: false
+        default: ''
+        type: string
+      draft:
+        description: 'Mark release as Draft'
+        required: false
+        default: false
+        type: boolean
+      prerelease:
+        description: 'Mark release as Pre-release'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Release Windows Portable EXE
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build Executable with PyInstaller
+        run: |
+          pyinstaller IELTS_Shadowing_Assistant.spec --clean --noconfirm
+
+      - name: Verify Build & Generate Package / Checksums
+        shell: pwsh
+        run: |
+          $exePath = "dist/IELTS_Shadowing_Assistant.exe"
+          if (!(Test-Path $exePath)) {
+            Write-Error "Executable not found at $exePath!"
+            exit 1
+          }
+
+          $fileSizeMB = [math]::Round((Get-Item $exePath).Length / 1MB, 2)
+          Write-Host "Successfully generated executable: $exePath ($fileSizeMB MB)"
+
+          # Compute SHA-256 Checksum
+          $hash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash
+          "$hash  IELTS_Shadowing_Assistant.exe" | Out-File -FilePath "dist/SHA256SUMS.txt" -Encoding ascii
+          Write-Host "SHA256 Checksum: $hash"
+
+          # Create a Portable ZIP Bundle
+          Compress-Archive -Path $exePath, "README.md", "LICENSE" -DestinationPath "dist/IELTS_Shadowing_Assistant-Windows-Portable.zip" -Force
+          Write-Host "Created portable archive: dist/IELTS_Shadowing_Assistant-Windows-Portable.zip"
+
+      - name: Upload Artifacts (Action Run)
+        uses: actions/upload-artifact@v4
+        with:
+          name: IELTS_Shadowing_Assistant-Windows
+          path: |
+            dist/IELTS_Shadowing_Assistant.exe
+            dist/IELTS_Shadowing_Assistant-Windows-Portable.zip
+            dist/SHA256SUMS.txt
+          retention-days: 90
+
+      - name: Resolve Release Metadata
+        id: release_meta
+        shell: pwsh
+        run: |
+          $tag = ""
+          $title = ""
+
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $tag = "${{ github.ref_name }}"
+            $title = "IELTS Shadowing Assistant $tag"
+          } elseif ("${{ inputs.tag_name }}" -ne "") {
+            $tag = "${{ inputs.tag_name }}"
+            if ("${{ inputs.release_title }}" -ne "") {
+              $title = "${{ inputs.release_title }}"
+            } else {
+              $title = "IELTS Shadowing Assistant $tag"
+            }
+          } else {
+            $date = Get-Date -Format "yyyyMMdd.HHmm"
+            $tag = "v1.0.0-$date"
+            $title = "IELTS Shadowing Assistant ($date)"
+          }
+
+          Write-Host "Tag: $tag"
+          Write-Host "Title: $title"
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "title=$title" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag }}
+          name: ${{ steps.release_meta.outputs.title }}
+          draft: ${{ inputs.draft || false }}
+          prerelease: ${{ inputs.prerelease || false }}
+          generate_release_notes: true
+          files: |
+            dist/IELTS_Shadowing_Assistant.exe
+            dist/IELTS_Shadowing_Assistant-Windows-Portable.zip
+            dist/SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

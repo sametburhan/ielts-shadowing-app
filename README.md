@@ -11,6 +11,7 @@
 [![LLM Google Gemini](https://img.shields.io/badge/LLM-Google%20Gemini-orange.svg)](https://aistudio.google.com)
 [![TTS Microsoft Edge](https://img.shields.io/badge/TTS-Edge--TTS-blueviolet.svg)](https://github.com/rany2/edge-tts)
 [![Audio Pydub](https://img.shields.io/badge/Audio-Pydub-red.svg)](https://github.com/jiaaro/pydub)
+[![GitHub Release](https://img.shields.io/github/v/release/sametburhan/ielts-shadowing-app?logo=github&color=blue)](https://github.com/sametburhan/ielts-shadowing-app/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -99,15 +100,27 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### 📦 Bağımsız EXE Olarak Çalıştırma
-Uygulama herhangi bir Python kurulumuna ihtiyaç duymaksızın doğrudan çalıştırılabilen tek parça `.exe` olarak derlenmiştir:
-- **Konum:** `dist/IELTS_Shadowing_Assistant.exe`
-- Doğrudan çift tıklayarak başlatabilirsiniz. `config.json` ayarlarınız `.exe` dosyasının bulunduğu dizinde otomatik olarak saklanır.
+### 📦 Taşınabilir (Portable) EXE İndirme ve Çalıştırma
+Uygulama, Python kurulumuna veya ek bağımlılıklara ihtiyaç duymadan doğrudan Windows üzerinde çalışabilen tek parça portable `.exe` olarak sunulmaktadır:
 
-İleride tekrar derlemek isterseniz:
+1. **Doğrudan İndirin:** [GitHub Releases](https://github.com/sametburhan/ielts-shadowing-app/releases) sayfasından en son sürümdeki `IELTS_Shadowing_Assistant.exe` veya `.zip` arşivini indirin.
+2. **Çalıştırın:** Dosyaya çift tıklayarak hemen kullanmaya başlayabilirsiniz.
+3. **Ayarlar:** API anahtarınız ve kullanıcı tercihleriniz Windows `AppData/Roaming` dizininde güvenle saklanır, böylece güncellemelerde kaybolmaz.
+
+#### ⚙️ Yerel Olarak EXE Derleme:
 ```bash
 pyinstaller IELTS_Shadowing_Assistant.spec --clean --noconfirm
 ```
+Derlenen dosya `dist/IELTS_Shadowing_Assistant.exe` konumunda oluşturulur.
+
+#### 🤖 GitHub Actions ile Otomatik Release Alma:
+Depoda yapılandırılmış GitHub Action iş akışı (`.github/workflows/release.yml`) sayesinde sürümler otomatik derlenip GitHub Release olarak yayınlanır:
+- **Etiket (Tag) ile Otomatik Yayın:** Bir sürüm etiketi (`v*`) gönderildiğinde otomatik tetiklenir:
+  ```bash
+  git tag v1.0.0
+  git push origin v1.0.0
+  ```
+- **Manuel Tetikleme (Workflow Dispatch):** GitHub arayüzünden **Actions** > **Build and Release Portable EXE** sekmesine gidip **Run workflow** butonuna tıklayarak istediğiniz etiket ve başlıkla tek tıkla derleme ve release başlatabilirsiniz.
 
 ---
 
