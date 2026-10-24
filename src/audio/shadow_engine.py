@@ -5,6 +5,29 @@ import tempfile
 from pathlib import Path
 from typing import List, Dict, Any, Callable, Optional
 
+
+def _hide_pydub_console_windows():
+    """Stops pydub's ffmpeg calls from flashing a console window in the windowed (no-console) build."""
+    if sys.platform != "win32":
+        return
+    import subprocess
+    import pydub.utils
+
+    if getattr(subprocess.Popen, "_no_window", False):
+        return
+
+    class _NoWindowPopen(subprocess.Popen):
+        _no_window = True
+
+        def __init__(self, *args, **kwargs):
+            kwargs["creationflags"] = kwargs.get("creationflags", 0) | subprocess.CREATE_NO_WINDOW
+            super().__init__(*args, **kwargs)
+
+    # pydub.audio_segment calls subprocess.Popen; pydub.utils imported Popen by name
+    subprocess.Popen = _NoWindowPopen
+    pydub.utils.Popen = _NoWindowPopen
+
+
 class ShadowAudioEngine:
     """
     Core 'Hear - Pause - Repeat' audio generation engine.
@@ -25,6 +48,7 @@ class ShadowAudioEngine:
             ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
             os.environ["PATH"] = os.path.dirname(ffmpeg_path) + os.pathsep + os.environ.get("PATH", "")
             AudioSegment.converter = ffmpeg_path
+            _hide_pydub_console_windows()
         except Exception as e:
             print(f"[ShadowAudioEngine] Warning configuring imageio-ffmpeg: {e}")
 
